@@ -8,20 +8,19 @@
              console.log("No file selected.");
          }
          else{
-             // let's crop them
-             get_croped(file);
-             // get_signed_request(file);
+             get_signed_request(file);
          }
      };
      
-     function get_croped(file){
+     function get_croped(url,file){
        var xhr = new XMLHttpRequest();
-       xhr.open("GET", "/crop?file_name="+file.name+"&file_type="+file.type);
+       xhr.open("GET", "/crop?url="+url+"&file_name="+file.name+"&file_type="+file.type);
        xhr.onreadystatechange = function(){
            if(xhr.readyState === 4){
                if(xhr.status === 200){
                    var response = JSON.parse(xhr.responseText);
-                   console.log("success",response);
+                   console.log(response);
+                   // upload_file(response.file, response.signed_request, response.url,false);
                }
                else{
                    console.log("Wasn't a good crop.");
@@ -38,7 +37,7 @@
              if(xhr.readyState === 4){
                  if(xhr.status === 200){
                      var response = JSON.parse(xhr.responseText);
-                     upload_file(file, response.signed_request, response.url);
+                     upload_file(file, response.signed_request, response.url,true);
                  }
                  else{
                      console.log("Could not get signed URL.");
@@ -48,20 +47,48 @@
          xhr.send();
      }
      
-     function upload_file(file, signed_request, url){
-         var xhr = new XMLHttpRequest();
-         xhr.open("PUT", signed_request);
-         xhr.setRequestHeader('x-amz-acl', 'public-read');
-         xhr.onload = function() {
-             if (xhr.status === 200) {
-                 document.getElementById("preview").src = url;
-                 document.getElementById("image_url").value = url;
-             }
-         };
-         xhr.onerror = function() {
-             alert("Could not upload file.");
-         };
-         xhr.send(file);
+     var images = {
+       original: "",
+       small: ""
+     };
+     function upload_file(file, signed_request, url,first){
+        console.log(first,file);
+        if (first){
+          var xhr = new XMLHttpRequest();
+          xhr.open("PUT", signed_request);
+          xhr.setRequestHeader('x-amz-acl', 'public-read');
+          xhr.onload = function() {
+              if (xhr.status === 200) {
+                  // let's crop them
+                  get_croped(url,file);
+                  images.original = url;
+              }
+          };
+          xhr.onerror = function() {
+              alert("Could not upload file.");
+          };
+          xhr.send(file);
+          
+        }else{
+          
+          var xhr = new XMLHttpRequest();
+          xhr.open("PUT", signed_request);
+          xhr.setRequestHeader('x-amz-acl', 'public-read');
+          xhr.onload = function() {
+              if (xhr.status === 200) {
+                   images.small = url;
+                   document.getElementById("preview").src = url;
+                   document.getElementById("image_url").value = JSON.stringify(images);
+                   console.log(JSON.stringify(images));
+                 }
+          };
+          xhr.onerror = function() {
+              alert("Could not upload file.");
+          };
+          xhr.send(file);
+          
+        }
+        
      }
      
  })();

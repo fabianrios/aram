@@ -5,6 +5,7 @@ var express = require('express'),
 var friendlyUrl = require('friendly-url');
 
 var easyimg = require('easyimage');
+var fs = require('fs');
 var http = require('http');
 var path = require('path');
 var aws = require('aws-sdk');
@@ -31,41 +32,84 @@ router.get('/', function (req, res, next) {
 });
 
 router.get('/crop', function(req, res){
-  easyimg.info(req.query.file_name).then(
-    function(file) {
-      console.log(file);
-      res.write(JSON.stringify(file));
-      res.end();
-    }, function (err) {
+  
+  easyimg.rescrop({
+       src:req.query.url, dst:__dirname + '/../../img/uploads/small-'+req.query.file_name,
+       width:300, height:250,
+       ignoreAspectRatio: false,
+       cropwidth:300, cropheight:176,
+       gravity:'North',
+       x:0, y:0
+    }).then(
+    function(image) {
+      console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
+      
+      var params = {
+        localFile: __dirname + '/../../img/uploads/small-'+req.query.file_name,
+        s3Params: {
+          Bucket: S3_BUCKET,
+          Key: req.query.file_name,
+          ContentType: req.query.file_type,
+          ACL: 'public-read'
+        },
+      };
+      
+      var uploader = client.uploadFile(params);
+      uploader.on('error', function(err) {
+        console.error("unable to upload:", err.stack);
+      });
+      uploader.on('progress', function() {
+        console.log("progress", uploader.progressMd5Amount, uploader.progressAmount, uploader.progressTotal);
+      });
+      uploader.on('end', function() {
+        console.log("done uploading");
+        var file = {
+          url: 'https://'+S3_BUCKET+'.s3.amazonaws.com/'+req.query.file_name
+        }
+        res.write(JSON.stringify(file));
+        res.end();
+      })
+      uploder(params);
+      // inprint('small-'+req.query.file_name,req.query.file_type,res);
+    },
+    function (err) {
       console.log(err);
     }
+    
   );
+
 });
 
+var inprint = function inprint(name,type,res){
+  aws.config.update({accessKeyId: AWS_ACCESS_KEY, secretAccessKey: AWS_SECRET_KEY});
+  var s3 = new aws.S3();
+  var s3_params = {
+      Bucket: S3_BUCKET,
+      Key: name,
+      Expires: 60,
+      ContentType: type,
+      ACL: 'public-read'
+  };
+  s3.getSignedUrl('putObject', s3_params, function(err, data){
+      if(err){
+          console.log("sign_err",err);
+      }
+      else{
+          var return_data = {
+              signed_request: data,
+              url: 'https://'+S3_BUCKET+'.s3.amazonaws.com/'+name
+          };
+          res.write(JSON.stringify(return_data));
+          res.end();
+      }
+  });
+}
+
 router.get('/sign_s3', function(req, res){
-    aws.config.update({accessKeyId: AWS_ACCESS_KEY, secretAccessKey: AWS_SECRET_KEY});
-    var s3 = new aws.S3();
-    var s3_params = {
-        Bucket: S3_BUCKET,
-        Key: req.query.file_name,
-        Expires: 60,
-        ContentType: req.query.file_type,
-        ACL: 'public-read'
-    };
-    s3.getSignedUrl('putObject', s3_params, function(err, data){
-        if(err){
-            console.log("sign_err",err);
-        }
-        else{
-            var return_data = {
-                signed_request: data,
-                url: 'https://'+S3_BUCKET+'.s3.amazonaws.com/'+req.query.file_name
-            };
-            res.write(JSON.stringify(return_data));
-            res.end();
-        }
-    });
+  inprint(req.query.file_name,req.query.file_type,res);
 });
+
+
 
 router.get('/article/create', function (req, res, next) {
     res.render('create', {
@@ -88,7 +132,6 @@ router.get('/contact', function (req, res, next) {
 router.get('/article/:id', function (req, res, next) {
   var id = req.params.id
   db.Article.findById(id).then(function (article) {
-    // console.log(article);
     res.render('show', {
       title: "Pantalla individual",
       article: article
