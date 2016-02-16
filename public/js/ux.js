@@ -8,9 +8,28 @@
              console.log("No file selected.");
          }
          else{
-             get_signed_request(file);
+             // let's crop them
+             get_croped(file);
+             // get_signed_request(file);
          }
      };
+     
+     function get_croped(file){
+       var xhr = new XMLHttpRequest();
+       xhr.open("GET", "/crop?file_name="+file.name+"&file_type="+file.type);
+       xhr.onreadystatechange = function(){
+           if(xhr.readyState === 4){
+               if(xhr.status === 200){
+                   var response = JSON.parse(xhr.responseText);
+                   console.log("success",response);
+               }
+               else{
+                   console.log("Wasn't a good crop.");
+               }
+           }
+       };
+       xhr.send();
+     }
      
      function get_signed_request(file){
          var xhr = new XMLHttpRequest();

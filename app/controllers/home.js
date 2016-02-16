@@ -4,6 +4,7 @@ var express = require('express'),
   
 var friendlyUrl = require('friendly-url');
 
+var easyimg = require('easyimage');
 var http = require('http');
 var path = require('path');
 var aws = require('aws-sdk');
@@ -27,6 +28,18 @@ router.get('/', function (req, res, next) {
       articles: articles
     });
   });
+});
+
+router.get('/crop', function(req, res){
+  easyimg.info(req.query.file_name).then(
+    function(file) {
+      console.log(file);
+      res.write(JSON.stringify(file));
+      res.end();
+    }, function (err) {
+      console.log(err);
+    }
+  );
 });
 
 router.get('/sign_s3', function(req, res){

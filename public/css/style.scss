@@ -130,8 +130,8 @@ ul.posts{
 #preview{
   width: 100px;
   position: absolute;
-  top: -60px;
-  left: 17px;
+  top: -55px;
+  left: 15px;
 }
 
 .actions{
@@ -140,8 +140,9 @@ ul.posts{
   top: 10px;
 }
 
-input.file{
+input[type="file"].inline-file{
   margin-top: 30px;
+  margin-bottom: 0;
 }
 
 ul.centerize{
