@@ -2,12 +2,15 @@
 <div class="row">
   <div class="large-12 columns">
     <a href="/" class="button tiny"><span class="fa fa-undo"></span> Volver</a>
-    <form action="/articles" method="post">
+    <form action="/articles" method="post" enctype="multipart/form-data">
       <div class="row">
-        <div class="large-7 columns">
+        <div class="large-6 columns">
           <input type="text" name="title" placeholder="título"  />
         </div>
-        <div class="large-5 columns">
+        <div class="large-4 columns">
+          <input type="file" class="inline-file" name="images" id="images" />
+        </div>
+        <div class="large-2 columns">
           <select name="category" id="category" multiple size=3>
             <option value="tips">Tips</option>
             <option value="viajes">Viajes</option>
@@ -17,7 +20,7 @@
       </div>
       <input type="text" name="text" placeholder="previsualización" />
       <textarea name="fulltext" id="fulltext" placeholder="texto"></textarea>
-      <input type="submit" value="Enviar nuevo" class="button success"/>
+      <button class="button success">Crear articulo</button>
     </form>
   </div>
 </div>

@@ -4,6 +4,41 @@ var express = require('express'),
   
 var friendlyUrl = require('friendly-url');
 
+var path = require('path');
+var papercut = require('papercut');
+var multer  = require('multer');
+var upload = multer({ dest: 'img/uploads/' });
+
+papercut.configure(function(){
+  papercut.set('storage', 'file');
+  papercut.set('directory', path.join(__dirname, '/../img/uploads'));
+  papercut.set('url', '/uploads');
+});
+
+papercut.configure('production', function(){
+  papercut.set('storage', 's3')
+  papercut.set('S3_KEY', process.env.S3_ACCESS_KEY)
+  papercut.set('S3_SECRET', process.env.S3_SECRET_ACCESS_KEY)
+  papercut.set('bucket', process.env.S3_BUCKET_NAME)
+});
+
+AvatarUploader = papercut.Schema(function(schema){
+  schema.version({
+    name: 'small',
+    size: '300x176',
+    process: 'crop'
+  });
+  schema.version({
+    name: 'large',
+    size: '1600x768',
+    process: 'resize'
+  });
+  schema.version({
+    name: 'origin',
+    process: 'copy'
+  });
+});
+
 module.exports = function (app) {
   app.use('/', router);
 };
@@ -59,13 +94,26 @@ router.get('/article/:id/edit', function (req, res, next) {
   });
 });
 
+var imageId = 0;
 
-router.post('/articles', function (req, res, next) {
-  var body = req.body
+router.post('/articles', upload.single('images'), function (req, res, next) {
+  var body = req.body;
   var urlbody = friendlyUrl(body.title);
-  db.Article.create({ title: body.title, text: body.text, url: urlbody, fulltext: body.fulltext, category: body.category }).then(function () {
-   res.redirect('/');
+  
+  var uploader;
+  var the_images;
+  uploader = new AvatarUploader();
+  
+  // console.log("req.file: ",req.file,"body: ",body);
+  
+  uploader.process("" + (imageId++), req.file.path, function(err, images) {
+    the_images = images;
+    console.log("large",images.large, "small",images.small, "origin",images.origin);
+    res.redirect('/');
   });
+  // db.Article.create({ title: body.title, text: body.text, url: urlbody, fulltext: body.fulltext, category: body.category, images: the_images }).then(function () {
+  //  res.redirect('/');
+  // });
 });
 
 router.post('/article/:id/editar', function (req, res, next) {
@@ -89,3 +137,4 @@ router.get('/article/:id/destroy', function (req, res, next) {
       res.redirect('/');
     });
 });
+
