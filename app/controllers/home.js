@@ -12,6 +12,43 @@ cloudinary.config({
   api_secret: 'rkFGhUYg0shUm4m7Qtnb1qWSlEQ' 
 });
 
+//passport
+var flash = require('express-flash');
+var session = require('express-session');
+var passport = require('passport')
+  , LocalStrategy = require('passport-local').Strategy;
+  
+
+
+passport.serializeUser(function(user, done) {
+  console.log("serializeUser");
+  done(null, user.id);
+});
+
+passport.deserializeUser(function(id, done) {
+  console.log("deserializeUser");
+  User.findOne(id).success(function(user) { done(null, user); });
+});
+
+  
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+    console.log("username",username);
+    db.User.findById(1).then(function (user) {
+      console.log("user",user);
+      if (!user) {
+        console.log("Incorrect username");
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      if (user.password !== password) {
+        console.log("Incorrect password");
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+      return done(null, user);
+    })
+  }
+));
+/// passport
 
 var http = require('http');
 var path = require('path');
@@ -42,7 +79,22 @@ router.get('/', function (req, res, next) {
     });
 });
 
-router.get('/country/create', function (req, res, next) {
+router.get('/login', function (req, res, next) {
+    res.render('login', {
+      title: 'Inicio de sesión',
+      logo: "group-2.png"
+    });
+});
+
+
+router.post('/login', 
+  passport.authenticate('local', { successRedirect : '/blog', failureRedirect: '/login',failureFlash: true }),
+  function(req, res) {
+    res.redirect('/');
+  }
+);
+
+router.get('/country/create',authorize, function (req, res, next) {
     res.render('create_country', {
       title: 'Crear nuevo país',
       logo: "group-2.png"

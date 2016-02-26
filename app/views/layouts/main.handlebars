@@ -51,7 +51,14 @@
     </div>
     {{/ifCond}}
   </div>
-  <div class="main-body">{{{body}}}</div>
+  <div class="main-body">
+    {{#if user}}
+    	<p>Hello, <%= user.username %>. View your <a href="/profile">profile</a>.</p>
+    {{else}}
+      <p>Welcome! Please <a href="/login">log in</a>.</p>
+    {{/if}}
+    {{{body}}}
+  </div>
   <div class="footer">
     <p>Copyright © 2016 Aram’s SAS. Todos los derechos reservados</p>
   </div>

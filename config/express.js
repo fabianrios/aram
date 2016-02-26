@@ -9,6 +9,12 @@ var compress = require('compression');
 var methodOverride = require('method-override');
 var exphbs  = require('express-handlebars');
 
+var flash = require('express-flash');
+var session = require('express-session');
+var passport = require('passport')
+  , LocalStrategy = require('passport-local').Strategy;
+
+
 module.exports = function(app, config) {
   var env = process.env.NODE_ENV || 'development';
   app.locals.ENV = env;
@@ -36,7 +42,7 @@ module.exports = function(app, config) {
   app.use(bodyParser.urlencoded({
     extended: true
   }));
-  app.use(cookieParser());
+  app.use(cookieParser('anewoneunonuevo'));
   app.use(compress());
   app.use(express.static(config.root + '/public'));
   app.use('/scripts', express.static(config.root + '/node_modules'));
@@ -47,6 +53,22 @@ module.exports = function(app, config) {
   controllers.forEach(function (controller) {
     require(controller)(app);
   });
+  
+  //passport
+  
+  app.use(session({ secret: 'ilovescotchscotchyscotchscotch' })); // session secret
+  app.use(passport.initialize());
+  app.use(passport.session()); // persistent login sessions
+  app.use(flash()); // use connect-flash for flash messages stored in session
+  passport.serializeUser(function(user, done) {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(function(id, done) {
+    User.findOne(id).success(function(user) { done(null, user); });
+  });
+ 
+  /// passport
 
   app.use(function (req, res, next) {
     var err = new Error('Not Found');
